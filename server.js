@@ -9,6 +9,8 @@ import { connectPostgres } from "./src/config/db_postgres.js";
 import studentRoutes from "./src/routes/student_routes.js";
 import teacherRoutes from "./src/routes/teacher_routes.js";
 import authRoutes from "./src/routes/auth_routes.js";
+import studentAuthRoutes from "./src/routes/student_auth_routes.js";
+import studentDashboardRoutes from "./src/routes/student_dashboard_routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -28,6 +30,9 @@ app.get("/", (req, res) => {
 app.use("/api/student", studentRoutes);
 app.use("/api/teacher", teacherRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/student/auth", studentAuthRoutes);
+app.use("/api/student/dashboard", studentDashboardRoutes);
+
 
 // 🟢 Start Server
 app.listen(PORT, () => {

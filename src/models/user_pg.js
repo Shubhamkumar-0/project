@@ -13,6 +13,39 @@ export const createUser = async (name, email, hashedPassword, role) => {
   return result.rows[0];
 };
 
+export async function updateUserById(id, data) {
+  try {
+    const { name, email, password } = data;
+
+    let query = `
+      UPDATE users 
+      SET name = $1, email = $2
+      WHERE id = $3
+      RETURNING id, name, email, role, created_at
+    `;
+
+    let values = [name, email, id];
+
+    // If password update required
+    if (password) {
+      query = `
+        UPDATE users 
+        SET name = $1, email = $2, password = crypt($3, gen_salt('bf'))
+        WHERE id = $4
+        RETURNING id, name, email, role, created_at
+      `;
+      values = [name, email, password, id];
+    }
+
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  } catch (error) {
+    console.error("DB Update Error:", error);
+    throw error;
+  }
+}
+
+
 // Find user by email (used for login)
 export const findUserByEmail = async (email) => {
   const result = await pool.query(
