@@ -17,7 +17,7 @@ export default function App() {
         <Route path="/register-success" element={<RegisterSuccess />} />
 
         <Route
-          path="/student"
+          path="/student/dashboard"
           element={
             <PrivateRoute>
               <StudentDashboard />

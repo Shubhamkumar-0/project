@@ -8,7 +8,7 @@ export default function LoginSuccess() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate(`/${role}`);
+      navigate(`/${role}/dashboard`);
     }, 2500);
 
     return () => clearTimeout(timer);
