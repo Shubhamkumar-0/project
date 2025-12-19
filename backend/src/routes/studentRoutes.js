@@ -1,32 +1,28 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
-import pool from "../config/db.js";
+import { getStudentDashboard } from "../controllers/studentController.js";
+import { 
+  getLesson, 
+  markLessonComplete 
+} from "../controllers/lessonController.js";
+import { 
+  getSubjectQuizzes, 
+  startQuiz, 
+  submitQuiz 
+} from "../controllers/quizzController.js";
 
 const router = express.Router();
 
-router.get("/dashboard", protect, async (req, res) => {
-  try {
-    // 🔐 Allow ONLY students
-    if (req.user.role !== "student") {
-      return res.status(403).json({ message: "Student access only" });
-    }
+// Student dashboard
+router.get("/dashboard", protect, getStudentDashboard);
 
-    const studentId = req.user.id;
+// Lessons
+router.get("/lessons/:lessonId", protect, getLesson);
+router.post("/lessons/:lessonId/complete", protect, markLessonComplete);
 
-    // 👤 Fetch logged-in student details
-    const student = await pool.query(
-      "SELECT id, name, email FROM users WHERE id = $1",
-      [studentId]
-    );
-
-    res.json({
-      student: student.rows[0]
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+// Quizzes
+router.get("/subjects/:subjectId/quizzes", protect, getSubjectQuizzes);
+router.post("/quizzes/:quizId/start", protect, startQuiz);
+router.post("/quizzes/attempt/:attemptId/submit", protect, submitQuiz);
 
 export default router;

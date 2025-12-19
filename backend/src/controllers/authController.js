@@ -1,6 +1,5 @@
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import pool from "../config/db.js";
+import User from "../models/User.js";
 
 /* ===================== REGISTER ===================== */
 export const register = async (req, res) => {
@@ -10,7 +9,8 @@ export const register = async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
-     // ❌ Block admin registration
+
+    // ❌ Block admin registration
     if (role === "admin") {
       return res.status(403).json({
         message: "Admin registration not allowed",
@@ -18,25 +18,28 @@ export const register = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await pool.query(
-      "SELECT id FROM users WHERE email=$1",
-      [email]
-    );
-
-    if (existingUser.rows.length > 0) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || "student"
+    });
 
-    // Insert user
-    await pool.query(
-      "INSERT INTO users (name, email, password, role) VALUES ($1,$2,$3,$4)",
-      [name, email, hashedPassword, role || "student"]
-    );
-
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({ 
+      message: "User registered successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ message: err.message });
@@ -48,25 +51,21 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
-
-    if (result.rows.length === 0) {
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const user = result.rows[0];
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
+    // Check password
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Create token
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -74,7 +73,7 @@ export const login = async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id,
+        id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
